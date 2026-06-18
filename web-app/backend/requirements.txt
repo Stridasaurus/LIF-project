@@ -1,0 +1,16 @@
+# Backend (FastAPI) dependencies.
+#
+# Install into a DEDICATED virtualenv (web-app/backend/.venv), NOT the conda
+# `sandbox-env`: the repo's .githooks/pre-commit regenerates environment.yml from
+# sandbox-env, so installing these there would fold web deps into the notebook env.
+
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+
+# Shared simulation engine (editable install of the repo-root package).
+-e ../../lif_core
+
+# Test-only deps.
+pytest>=7
+httpx>=0.27
