@@ -27,10 +27,11 @@ CONDA_DEPS=$(echo "$CONDA_HISTORY" | awk '/^dependencies:/{p=1;next} /^prefix:|^
 PYPI_NAMES=$(conda run -n "$ENV_NAME" conda list 2>/dev/null | awk 'NR>3 && $4=="pypi"{print $1}')
 PIP_PKGS=$(conda run -n "$ENV_NAME" pip list --not-required --format=freeze 2>/dev/null | \
   grep -v "^#" | \
-  while IFS== read -r name version; do
+  while read -r pkg; do
+    name=$(echo "$pkg" | cut -d= -f1)
     norm=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
-    if echo "$PYPI_NAMES" | grep -qi "^${norm}$\|^$(echo $name | tr '[:upper:]' '[:lower:]')$"; then
-      echo "    - ${name}==${version}"
+    if echo "$PYPI_NAMES" | grep -qi "^${norm}$\|^$(echo "$name" | tr '[:upper:]' '[:lower:]')$"; then
+      echo "    - ${pkg}"
     fi
   done)
 

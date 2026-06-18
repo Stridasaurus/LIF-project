@@ -5,5 +5,5 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-    - ipykernel===7.3.0
-    - matplotlib===3.11.0
+    - ipykernel==7.3.0
+    - matplotlib==3.11.0
