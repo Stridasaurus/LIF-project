@@ -2,6 +2,10 @@
 *Author: Strider Settgast* 
 #### A Python simulation of a leaky integrate-and-fire (LIF) neuron model, implemented as a final project for CSE1505 – Intro to Programming (Python), Fall 2025.
 
+> **From class project to web app.** This began as my final project for CSE1505: a single Python notebook you ran in Jupyter and drove with text prompts. It has since grown into an interactive **web app** that runs right in the browser — the original simulation logic was extracted into a reusable engine ([`lif_core/`](lif_core)) and wrapped in a small web frontend (and an optional FastAPI backend). The original notebook is preserved here, unchanged, for posterity.
+>
+> **▶ Try it live:** **https://stridasaurus.github.io/LIF-project/**
+
 ## Overview
 
 The LIF model treats a neuron as an RC electrical circuit. Input current causes charge to accumulate across the cell membrane; when the membrane potential crosses a threshold, the neuron "fires" (an action potential) and resets. This simulator lets you configure all neuron parameters as arbitrary functions of time and visualizes the results.
@@ -61,21 +65,28 @@ I(t):     1.5*np.random.normal()**2 if t > 100 else 1.5*np.random.normal()**2
 ## Project Structure
 
 ```
-LIF_Model.ipynb   # Main simulation notebook
+LIF Model.ipynb     # The original class-project notebook (preserved, unchanged)
+lif_core/           # Reusable simulation engine extracted from the notebook
+web-app/
+├── backend/        # FastAPI REST API (optional "backend mode")
+└── frontend/       # Browser app (Plotly); runs the simulation client-side
 README.md
 ```
 
+The two ways to run it:
+
+- **Notebook (the original):** open `LIF Model.ipynb` in Jupyter — see [CLAUDE.md](CLAUDE.md) for the conda setup.
+- **Web app:** use the [live site](https://stridasaurus.github.io/LIF-project/), or run it locally — see [web-app/README.md](web-app/README.md).
+
 ## Dependencies
 
-- Python 3.11+
-- NumPy
-- Matplotlib
-
-Install dependencies with:
+**Notebook:** Python 3.11+, NumPy, Matplotlib.
 
 ```bash
 pip install numpy matplotlib
 ```
+
+**Web app:** see [web-app/README.md](web-app/README.md) — the hosted site needs nothing (it runs in your browser); the optional backend uses FastAPI.
 
 ## References
 
