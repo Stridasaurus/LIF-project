@@ -14,7 +14,8 @@
       <p class="subtitle">
         Enter time functions for the input current, threshold, and resistance,
         then run the simulation. Use <code>t</code> (ms), <code>math.*</code>,
-        and <code>np.*</code> — e.g. <code>1.5 + math.sin(t / 10)</code>.
+        and <code>np.*</code> — e.g. <code>1.5 + math.sin(t / 10)</code> or
+        <code>np.where(t &gt; 100, 3, 0.5)</code>. Runs entirely in your browser.
       </p>
     </header>
 
@@ -63,12 +64,12 @@
 
     <footer>
       <small>
-        Powered by the <code>lif_core</code> engine ·
-        <a href="/docs">API docs</a>
+        Powered by the <code>lif_core</code> engine, ported to JavaScript ·
+        <a href="https://github.com/Stridasaurus/LIF-project">source</a>
       </small>
     </footer>
 
-    <script src="js/api.js"></script>
+    <script src="js/lif.js"></script>
     <script src="js/plot.js"></script>
     <script src="js/app.js"></script>
   </body>

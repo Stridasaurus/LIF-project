@@ -2,8 +2,18 @@
 
 An interactive web app for teaching Leaky Integrate-and-Fire neuron dynamics.
 It wraps the shared [`lif_core`](../lif_core) simulation engine (extracted from
-`LIF Model.ipynb`, which stays untouched) in a FastAPI REST backend and a
-zero-build Plotly frontend.
+`LIF Model.ipynb`, which stays untouched) in a zero-build Plotly frontend.
+
+The frontend ships in two interchangeable modes:
+
+- **Client-side (default / how it's deployed):** the simulation runs entirely in
+  the browser via [`frontend/js/lif.js`](frontend/js/lif.js), a faithful
+  JavaScript port of `lif_core`. No backend required — this is what gets
+  published to **GitHub Pages**.
+- **Backend mode:** a FastAPI REST API (`web-app/backend`) that imports the
+  Python `lif_core` engine. Kept for local use and as the path to server-side
+  hosting / heavier future models. To use it, load `js/api.js` instead of
+  `js/lif.js` in `index.html`.
 
 ```
 web-app/
@@ -14,9 +24,30 @@ web-app/
 │       ├── schemas.py          Pydantic request/response models
 │       └── routers/simulation.py   /api/run_simulation, /api/defaults, /api/health
 └── frontend/           index.html + css/ + js/ (Plotly via CDN)
+    └── js/lif.js       client-side engine (JS port of lif_core)
 ```
 
-## Run locally
+## Deployed site (GitHub Pages)
+
+The static frontend is published by `.github/workflows/pages.yml` on every push
+to `main` that touches `web-app/frontend/`.
+
+**One-time setup:** in the repo on GitHub, go to **Settings → Pages → Build and
+deployment → Source** and select **GitHub Actions**. After the next push (or a
+manual run of the "Deploy frontend to GitHub Pages" workflow), the site is live
+at <https://stridasaurus.github.io/LIF-project/>.
+
+Because it's pure client-side, it stays up with no server and at no cost.
+
+## Run the static site locally (no Python)
+
+Just serve the `frontend/` folder with any static server, e.g.:
+
+```bash
+cd web-app/frontend && python3 -m http.server 8000   # then open http://localhost:8000
+```
+
+## Run the backend (optional, for backend mode)
 
 > Use a **dedicated virtualenv** for the backend — *not* the conda `sandbox-env`.
 > The repo's `.githooks/pre-commit` regenerates `environment.yml` from

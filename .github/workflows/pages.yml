@@ -1,0 +1,44 @@
+name: Deploy frontend to GitHub Pages
+
+# Publishes the static, client-side frontend (web-app/frontend) to GitHub Pages.
+# The simulation runs entirely in the browser (js/lif.js), so no backend is
+# needed for the hosted site.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "web-app/frontend/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; cancel in-progress runs for the latest push.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload frontend artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web-app/frontend
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
