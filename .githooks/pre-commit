@@ -22,7 +22,17 @@ CONDA_HISTORY=$(conda run -n "$ENV_NAME" conda env export --from-history 2>/dev/
 
 CHANNELS=$(echo "$CONDA_HISTORY" | awk '/^channels:/{p=1;next} /^dependencies:/{p=0} p && /^  -/{print}')
 CONDA_DEPS=$(echo "$CONDA_HISTORY" | awk '/^dependencies:/{p=1;next} /^prefix:|^$/{p=0} p && /^  -/ && !/pip/{print}')
-PIP_PKGS=$(conda run -n "$ENV_NAME" conda list 2>/dev/null | awk 'NR>3 && $4=="pypi"{print "    - "$1"=="$2}')
+# Get only top-level pip packages (not transitive deps), cross-referenced
+# with conda list to confirm they're pip-installed (pypi channel), not conda-managed.
+PYPI_NAMES=$(conda run -n "$ENV_NAME" conda list 2>/dev/null | awk 'NR>3 && $4=="pypi"{print $1}')
+PIP_PKGS=$(conda run -n "$ENV_NAME" pip list --not-required --format=freeze 2>/dev/null | \
+  grep -v "^#" | \
+  while IFS== read -r name version; do
+    norm=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+    if echo "$PYPI_NAMES" | grep -qi "^${norm}$\|^$(echo $name | tr '[:upper:]' '[:lower:]')$"; then
+      echo "    - ${name}==${version}"
+    fi
+  done)
 
 {
   echo "name: $ENV_NAME"
