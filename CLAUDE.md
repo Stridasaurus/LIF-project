@@ -15,6 +15,15 @@ jupyter notebook "LIF Model.ipynb"
 
 Then select the `sandbox-env` kernel from the kernel dropdown in the Jupyter UI.
 
+### First-time setup on a new machine
+
+```bash
+conda env create -f environment.yml        # recreates sandbox-env
+conda run -n sandbox-env python -m ipykernel install --user --name=sandbox-env --display-name="sandbox-env"
+git config core.hooksPath .githooks        # activates the pre-commit hook
+chmod +x .githooks/pre-commit
+```
+
 ## Running the Simulation
 
 Open and run `LIF Model.ipynb` in Jupyter. The simulation is interactive — it prompts for parameter functions at runtime:
