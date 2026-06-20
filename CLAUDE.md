@@ -59,3 +59,7 @@ All code lives in a single notebook cell. The two main components are:
 | `R(t)` | MΩ | 10.0 |
 
 The governing equation is `τ_m × dV/dt = -(V - V_rest) + R(t) × I(t)`, integrated with the forward Euler method.
+
+## Note
+
+Do not make any changes the notebook https://github.com/Stridasaurus/LIF-project.
