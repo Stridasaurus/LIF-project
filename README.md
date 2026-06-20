@@ -65,9 +65,10 @@ I(t):     1.5*np.random.normal()**2 if t > 100 else 1.5*np.random.normal()**2
 ## Project Structure
 
 ```
-LIF Model.ipynb     # The original class-project notebook (preserved, unchanged)
 lif_core/           # Reusable simulation engine extracted from the notebook
 web-app/
+├── notebook/       # The original class-project notebook (preserved, unchanged)
+│   └── LIF Model.ipynb
 ├── backend/        # FastAPI REST API (optional "backend mode")
 └── frontend/       # Browser app (Plotly); runs the simulation client-side
 README.md
@@ -75,7 +76,7 @@ README.md
 
 The two ways to run it:
 
-- **Notebook (the original):** open `LIF Model.ipynb` in Jupyter — see [CLAUDE.md](CLAUDE.md) for the conda setup.
+- **Notebook (the original):** open `web-app/notebook/LIF Model.ipynb` in Jupyter — see [CLAUDE.md](CLAUDE.md) for the conda setup.
 - **Web app:** use the [live site](https://stridasaurus.github.io/LIF-project/), or run it locally — see [web-app/README.md](web-app/README.md).
 
 ## Dependencies

@@ -10,7 +10,7 @@ To launch Jupyter:
 
 ```bash
 conda activate base
-jupyter notebook "LIF Model.ipynb"
+jupyter notebook "web-app/notebook/LIF Model.ipynb"
 ```
 
 Then select the `sandbox-env` kernel from the kernel dropdown in the Jupyter UI.
@@ -26,7 +26,7 @@ chmod +x .githooks/pre-commit
 
 ## Running the Simulation
 
-Open and run `LIF Model.ipynb` in Jupyter. The simulation is interactive — it prompts for parameter functions at runtime:
+Open and run `web-app/notebook/LIF Model.ipynb` in Jupyter. The simulation is interactive — it prompts for parameter functions at runtime:
 
 ```
 Enter I(t) [default: 1.5]:
