@@ -7,7 +7,7 @@ Public API:
 """
 
 from .expressions import ExpressionError, compile_expression
-from .models import LIFNeuron, NeuronModel
+from .models import LIFNeuron, NeuronModel, run_fi_curve
 from .simulation import SimulationResult
 
 __all__ = [
@@ -16,6 +16,7 @@ __all__ = [
     "SimulationResult",
     "compile_expression",
     "ExpressionError",
+    "run_fi_curve",
 ]
 
 __version__ = "0.1.0"

@@ -18,6 +18,7 @@ class SimulationResult:
     voltage: List[float] = field(default_factory=list)
     current: List[float] = field(default_factory=list)
     threshold: List[float] = field(default_factory=list)
+    resistance: List[float] = field(default_factory=list)
     spike_times: List[float] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -27,5 +28,6 @@ class SimulationResult:
             "voltage": self.voltage,
             "current": self.current,
             "threshold": self.threshold,
+            "resistance": self.resistance,
             "spike_times": self.spike_times,
         }

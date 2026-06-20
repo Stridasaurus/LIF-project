@@ -5,46 +5,118 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LIF Neuron Simulator</title>
     <link rel="stylesheet" href="css/styles.css" />
-    <!-- Plotly.js from CDN (no build step). -->
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js" charset="utf-8"></script>
   </head>
   <body>
+
     <header>
-      <h1>Leaky Integrate-and-Fire Neuron</h1>
-      <p class="subtitle">
-        Enter time functions for the input current, threshold, and resistance,
-        then run the simulation. Use <code>t</code> (ms), <code>math.*</code>,
-        and <code>np.*</code> — e.g. <code>1.5 + math.sin(t / 10)</code> or
-        <code>np.where(t &gt; 100, 3, 0.5)</code>. Runs entirely in your browser.
-      </p>
+      <!-- Animated neuron schematic -->
+      <svg id="neuron-svg" viewBox="0 0 260 120" aria-hidden="true">
+        <!-- Dendrites -->
+        <path class="dendrite" d="M85,60 Q55,25 25,10" />
+        <path class="dendrite" d="M85,60 Q48,45 15,42" />
+        <path class="dendrite" d="M85,60 Q50,80 22,90" />
+        <path class="dendrite" d="M85,60 Q60,95 40,115" />
+        <!-- Soma -->
+        <circle class="soma" cx="105" cy="60" r="22" />
+        <!-- Nucleus -->
+        <circle class="nucleus" cx="105" cy="60" r="9" />
+        <!-- Axon hillock + axon shaft -->
+        <path class="axon" d="M127,60 L245,60" />
+        <!-- Myelin sheaths (Nodes of Ranvier between them) -->
+        <rect class="myelin" x="138" y="54" width="18" height="12" rx="6" />
+        <rect class="myelin" x="168" y="54" width="18" height="12" rx="6" />
+        <rect class="myelin" x="198" y="54" width="18" height="12" rx="6" />
+        <!-- Axon terminal boutons -->
+        <line class="terminal-line" x1="245" y1="60" x2="255" y2="45" />
+        <line class="terminal-line" x1="245" y1="60" x2="258" y2="60" />
+        <line class="terminal-line" x1="245" y1="60" x2="255" y2="75" />
+        <circle class="bouton" cx="255" cy="45" r="4" />
+        <circle class="bouton" cx="258" cy="60" r="4" />
+        <circle class="bouton" cx="255" cy="75" r="4" />
+      </svg>
+
+      <div class="header-text">
+        <h1>Leaky Integrate-and-Fire Neuron</h1>
+        <p class="subtitle">
+          Enter time functions for I(t), V<sub>thr</sub>(t), and R(t), then run the
+          simulation. Use <code>t</code> (ms), <code>math.*</code>, and <code>np.*</code>
+          — e.g. <code>1.5 + math.sin(t / 10)</code>. Runs entirely in your browser.
+        </p>
+      </div>
     </header>
 
     <main>
       <section class="controls" aria-label="Simulation controls">
-        <form id="sim-form">
+        <form id="sim-form" novalidate>
+
+          <!-- Core parameter functions -->
           <div class="field">
             <label for="I">Input current <em>I(t)</em> <span class="unit">nA</span></label>
             <input type="text" id="I" name="I" autocomplete="off" />
           </div>
-
           <div class="field">
             <label for="V_thr">Threshold <em>V<sub>thr</sub>(t)</em> <span class="unit">mV</span></label>
             <input type="text" id="V_thr" name="V_thr" autocomplete="off" />
           </div>
-
           <div class="field">
             <label for="R">Resistance <em>R(t)</em> <span class="unit">MΩ</span></label>
             <input type="text" id="R" name="R" autocomplete="off" />
           </div>
-
           <div class="field">
             <label for="simulation_time">Simulation time <span class="unit">ms</span></label>
             <input type="number" id="simulation_time" name="simulation_time" min="1" step="1" />
           </div>
 
+          <!-- Advanced options -->
+          <details class="advanced">
+            <summary>Advanced options</summary>
+
+            <div class="adv-section">
+              <h3 class="adv-heading">Refractory Period</h3>
+              <div class="field">
+                <label for="t_ref">Refractory period <em>t<sub>ref</sub></em> <span class="unit">ms</span></label>
+                <input type="number" id="t_ref" name="t_ref" min="0" step="0.5" />
+              </div>
+            </div>
+
+            <div class="adv-section">
+              <h3 class="adv-heading">Adaptive Threshold</h3>
+              <div class="field field-inline">
+                <label for="adapt_enabled">Enable adaptation</label>
+                <input type="checkbox" id="adapt_enabled" name="adapt_enabled" />
+              </div>
+              <div class="field">
+                <label for="delta_thr">Δ threshold per spike <span class="unit">mV</span></label>
+                <input type="number" id="delta_thr" name="delta_thr" min="0" step="0.5" />
+              </div>
+              <div class="field">
+                <label for="tau_adapt">Adaptation τ <span class="unit">ms</span></label>
+                <input type="number" id="tau_adapt" name="tau_adapt" min="1" step="10" />
+              </div>
+            </div>
+
+            <div class="adv-section">
+              <h3 class="adv-heading">Synaptic Input</h3>
+              <div class="field">
+                <label for="syn_spikes">Presynaptic spike times <span class="unit">ms, comma-sep</span></label>
+                <input type="text" id="syn_spikes" name="syn_spikes" placeholder="e.g. 30, 80, 150" autocomplete="off" />
+              </div>
+              <div class="field">
+                <label for="syn_weight">Synaptic weight <span class="unit">nA</span></label>
+                <input type="number" id="syn_weight" name="syn_weight" step="0.1" />
+              </div>
+              <div class="field">
+                <label for="syn_tau">Synaptic τ <span class="unit">ms</span></label>
+                <input type="number" id="syn_tau" name="syn_tau" min="0.1" step="0.5" />
+              </div>
+            </div>
+          </details>
+
           <div class="actions">
             <button type="submit" id="run-btn">Run Simulation</button>
-            <button type="button" id="reset-btn" class="secondary">Reset defaults</button>
+            <button type="button" id="fi-btn" class="secondary">F–I Curve</button>
+            <button type="button" id="reset-btn" class="secondary">Reset</button>
           </div>
         </form>
 
@@ -53,12 +125,18 @@
         <div class="spikes" aria-label="Spike output">
           <h2>Spikes</h2>
           <p id="spike-summary">Run a simulation to see results.</p>
+          <p id="spike-stats" class="spike-stats"></p>
           <p id="spike-times" class="spike-times"></p>
         </div>
       </section>
 
       <section class="plot-area" aria-label="Plots">
+        <div class="plot-tabs">
+          <button class="tab active" id="tab-sim">Simulation</button>
+          <button class="tab" id="tab-fi">F–I Curve</button>
+        </div>
         <div id="plot"></div>
+        <div id="fi-plot" hidden></div>
       </section>
     </main>
 

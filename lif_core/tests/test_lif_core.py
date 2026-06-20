@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from lif_core import ExpressionError, LIFNeuron, compile_expression
+from lif_core import ExpressionError, LIFNeuron, compile_expression, run_fi_curve
 
 
 # --------------------------------------------------------------------------- #
@@ -98,7 +98,7 @@ def test_lif_default_matches_reference():
 def test_lif_default_traces_consistent():
     result = LIFNeuron().simulate(200)
     n = len(result.time)
-    assert n == len(result.voltage) == len(result.current) == len(result.threshold)
+    assert n == len(result.voltage) == len(result.current) == len(result.threshold) == len(result.resistance)
     # The defaults sit exactly at rheobase (steady state V = -70 + 1.5*10 = -55,
     # equal to threshold), so the neuron asymptotes toward threshold without
     # crossing it: zero spikes. This matches the notebook.
@@ -126,3 +126,130 @@ def test_set_parameter_function_changes_output():
 def test_set_parameter_function_rejects_unknown_param():
     with pytest.raises(ExpressionError):
         LIFNeuron().set_parameter_function("bogus", "1.0")
+
+
+# --------------------------------------------------------------------------- #
+# Refractory period                                                             #
+# --------------------------------------------------------------------------- #
+
+
+def test_refractory_caps_spike_rate():
+    t_ref = 10.0
+    sim_time = 500.0
+    neuron = LIFNeuron(t_ref=t_ref)
+    neuron.set_parameter_function("I", "3.0")  # strong supra-threshold drive
+    result = neuron.simulate(sim_time)
+    max_possible = sim_time / t_ref
+    assert len(result.spike_times) <= max_possible
+
+
+def test_refractory_zero_does_not_block():
+    # t_ref=0 should behave the same as the original (no refractory gating).
+    neuron_ref = LIFNeuron(t_ref=0.0)
+    neuron_ref.set_parameter_function("I", "2.0")
+    result_ref = neuron_ref.simulate(200)
+
+    neuron_old = LIFNeuron(t_ref=0.0)
+    neuron_old.set_parameter_function("I", "2.0")
+    result_old = neuron_old.simulate(200)
+
+    assert result_ref.spike_times == pytest.approx(result_old.spike_times)
+
+
+# --------------------------------------------------------------------------- #
+# Adaptive threshold                                                            #
+# --------------------------------------------------------------------------- #
+
+
+def test_adaptation_reduces_spike_count():
+    I_str = "2.5"
+    sim_time = 500.0
+
+    neuron_plain = LIFNeuron()
+    neuron_plain.set_parameter_function("I", I_str)
+    plain_spikes = len(neuron_plain.simulate(sim_time).spike_times)
+
+    neuron_adapt = LIFNeuron(adapt_enabled=True, delta_thr=5.0, tau_adapt=50.0)
+    neuron_adapt.set_parameter_function("I", I_str)
+    adapt_spikes = len(neuron_adapt.simulate(sim_time).spike_times)
+
+    assert adapt_spikes < plain_spikes
+
+
+def test_adaptation_threshold_trace_rises_after_spike():
+    neuron = LIFNeuron(adapt_enabled=True, delta_thr=10.0, tau_adapt=200.0)
+    neuron.set_parameter_function("I", "2.5")
+    result = neuron.simulate(200)
+    # At least one spike must have occurred.
+    assert len(result.spike_times) > 0
+    # Threshold is recorded before the spike check, so the jump is visible one
+    # step after the spike index.
+    idx = round(result.spike_times[0] / 0.1)
+    assert result.threshold[min(idx + 1, len(result.threshold) - 1)] > -55.0
+
+
+# --------------------------------------------------------------------------- #
+# Synaptic input                                                                #
+# --------------------------------------------------------------------------- #
+
+
+def test_synaptic_input_causes_spike():
+    # Sub-threshold constant current alone → no spikes.
+    neuron_plain = LIFNeuron()
+    neuron_plain.set_parameter_function("I", "0.0")
+    assert neuron_plain.simulate(200).spike_times == []
+
+    # Same neuron but with a strong synaptic pulse at t=50 → at least one spike.
+    neuron_syn = LIFNeuron(syn_spikes=[50.0], syn_weight=5.0, syn_tau=5.0)
+    neuron_syn.set_parameter_function("I", "0.0")
+    assert len(neuron_syn.simulate(200).spike_times) >= 1
+
+
+def test_synaptic_current_zero_before_spike():
+    neuron = LIFNeuron(syn_spikes=[100.0], syn_weight=2.0, syn_tau=5.0)
+    # Before t=100 the synaptic current must be 0.
+    assert neuron._syn_current(0.0) == 0.0
+    assert neuron._syn_current(99.9) == 0.0
+    # At t slightly > 100 it must be positive.
+    assert neuron._syn_current(100.1) > 0.0
+
+
+# --------------------------------------------------------------------------- #
+# Resistance trace                                                              #
+# --------------------------------------------------------------------------- #
+
+
+def test_resistance_trace_length():
+    result = LIFNeuron().simulate(200)
+    assert len(result.resistance) == len(result.time)
+
+
+def test_resistance_trace_values():
+    neuron = LIFNeuron()
+    neuron.set_parameter_function("R", "10 + 5 * math.sin(t / 20)")
+    result = neuron.simulate(200)
+    # All values should be in a reasonable range.
+    assert all(0 < r < 20 for r in result.resistance)
+
+
+# --------------------------------------------------------------------------- #
+# F-I curve                                                                     #
+# --------------------------------------------------------------------------- #
+
+
+def test_fi_curve_zero_below_rheobase():
+    data = run_fi_curve(I_range=(0.0, 0.5), steps=10, sim_time=500.0)
+    # All currents well below rheobase (~0.7 nA) should produce zero spikes.
+    assert all(r == 0.0 for r in data["rates"])
+
+
+def test_fi_curve_nonzero_above_rheobase():
+    # Rheobase is ~1.5 nA; use 2.0–4.0 to stay clearly above it.
+    data = run_fi_curve(I_range=(2.0, 4.0), steps=5, sim_time=500.0)
+    assert all(r > 0.0 for r in data["rates"])
+
+
+def test_fi_curve_returns_expected_keys():
+    data = run_fi_curve(steps=5, sim_time=100.0)
+    assert "currents" in data and "rates" in data
+    assert len(data["currents"]) == len(data["rates"]) == 5

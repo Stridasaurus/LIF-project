@@ -4,10 +4,16 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from lif_core import ExpressionError, LIFNeuron
+from lif_core import ExpressionError, LIFNeuron, run_fi_curve
 
 from .. import config
-from ..schemas import DefaultsResponse, SimulationRequest, SimulationResponse
+from ..schemas import (
+    DefaultsResponse,
+    FICurveRequest,
+    FICurveResponse,
+    SimulationRequest,
+    SimulationResponse,
+)
 
 router = APIRouter(prefix="/api", tags=["simulation"])
 
@@ -30,13 +36,18 @@ def get_defaults() -> DefaultsResponse:
         V_rest=config.DEFAULT_V_REST,
         V_reset=config.DEFAULT_V_RESET,
         tau_m=config.DEFAULT_TAU_M,
+        t_ref=config.DEFAULT_T_REF,
+        adapt_enabled=config.DEFAULT_ADAPT_ENABLED,
+        delta_thr=config.DEFAULT_DELTA_THR,
+        tau_adapt=config.DEFAULT_TAU_ADAPT,
+        syn_weight=config.DEFAULT_SYN_WEIGHT,
+        syn_tau=config.DEFAULT_SYN_TAU,
     )
 
 
 @router.post("/run_simulation", response_model=SimulationResponse)
 def run_simulation(req: SimulationRequest) -> SimulationResponse:
     """Run a single LIF simulation and return its traces + spike times."""
-    # Guard against oversized runs (steps = simulation_time / dt).
     n_steps = req.simulation_time / req.dt
     if n_steps > config.MAX_STEPS:
         raise HTTPException(
@@ -52,9 +63,15 @@ def run_simulation(req: SimulationRequest) -> SimulationResponse:
         V_reset=req.V_reset,
         tau_m=req.tau_m,
         dt=req.dt,
+        t_ref=req.t_ref,
+        adapt_enabled=req.adapt_enabled,
+        delta_thr=req.delta_thr,
+        tau_adapt=req.tau_adapt,
+        syn_spikes=req.syn_spikes,
+        syn_weight=req.syn_weight,
+        syn_tau=req.syn_tau,
     )
 
-    # Compile user expressions; surface any problem as a clean 400.
     try:
         neuron.set_parameter_function("I", req.I)
         neuron.set_parameter_function("V_thr", req.V_thr)
@@ -64,24 +81,42 @@ def run_simulation(req: SimulationRequest) -> SimulationResponse:
 
     try:
         result = neuron.simulate(req.simulation_time)
-    except Exception as exc:  # noqa: BLE001 - a bad expression can fail at some t
-        raise HTTPException(
-            status_code=400, detail=f"Simulation failed: {exc}"
-        ) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=f"Simulation failed: {exc}") from exc
 
     data = result.to_dict()
     data["meta"] = {
         "n_spikes": len(result.spike_times),
         "n_steps": len(result.time),
         "params": {
-            "I": req.I,
-            "V_thr": req.V_thr,
-            "R": req.R,
-            "simulation_time": req.simulation_time,
-            "dt": req.dt,
-            "V_rest": req.V_rest,
-            "V_reset": req.V_reset,
-            "tau_m": req.tau_m,
+            "I": req.I, "V_thr": req.V_thr, "R": req.R,
+            "simulation_time": req.simulation_time, "dt": req.dt,
+            "V_rest": req.V_rest, "V_reset": req.V_reset, "tau_m": req.tau_m,
+            "t_ref": req.t_ref, "adapt_enabled": req.adapt_enabled,
         },
     }
     return SimulationResponse(**data)
+
+
+@router.post("/fi_curve", response_model=FICurveResponse)
+def fi_curve(req: FICurveRequest) -> FICurveResponse:
+    """Sweep constant input current and return firing rate vs. current."""
+    try:
+        data = run_fi_curve(
+            I_range=(req.I_min, req.I_max),
+            steps=req.steps,
+            sim_time=req.sim_time,
+            t_ref=req.t_ref,
+            V_thr_str=req.V_thr,
+            R_str=req.R,
+            V_rest=req.V_rest,
+            V_reset=req.V_reset,
+            tau_m=req.tau_m,
+            dt=req.dt,
+        )
+    except ExpressionError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=500, detail=f"F-I curve failed: {exc}") from exc
+
+    return FICurveResponse(**data)

@@ -1,16 +1,8 @@
-// Client-side LIF engine.
+// Client-side LIF engine — faithful JS port of lif_core/models.py.
 //
-// This is a faithful JavaScript port of the Python `lif_core` engine so the app
-// can run entirely in the browser (GitHub Pages, no backend). The integration
-// loop mirrors `lif_core/models.py` step-for-step — same forward-Euler update,
-// same spike-check-before-integrate ordering — so results match the Python
-// engine (both use IEEE-754 doubles).
-//
-// The same function names used by the backend client (`getDefaults`,
-// `runSimulation`) are provided here so `app.js` is unchanged whether the engine
-// is local or remote.
+// Provides the same getDefaults / runSimulation / runFICurve API as api.js so
+// app.js is engine-agnostic (works with or without the FastAPI backend).
 
-// Default parameters (match the notebook / lif_core).
 const DEFAULTS = {
   I: "1.5",
   V_thr: "-55",
@@ -20,14 +12,21 @@ const DEFAULTS = {
   V_rest: -70.0,
   V_reset: -75.0,
   tau_m: 10.0,
+  // Refractory period
+  t_ref: 2.0,
+  // Adaptive threshold
+  adapt_enabled: false,
+  delta_thr: 5.0,
+  tau_adapt: 100.0,
+  // Synaptic input
+  syn_spikes: [],
+  syn_weight: 1.0,
+  syn_tau: 5.0,
 };
 
-// `math.*` shim: Python's `math` names mapped onto JS equivalents (incl. pi/e,
-// which JS spells Math.PI / Math.E).
+// `math.*` shim — Python's math names mapped onto JS equivalents.
 const MATH = {
-  pi: Math.PI,
-  e: Math.E,
-  tau: Math.PI * 2,
+  pi: Math.PI, e: Math.E, tau: Math.PI * 2,
   sin: Math.sin, cos: Math.cos, tan: Math.tan,
   asin: Math.asin, acos: Math.acos, atan: Math.atan, atan2: Math.atan2,
   sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh,
@@ -36,21 +35,19 @@ const MATH = {
   floor: Math.floor, ceil: Math.ceil, trunc: Math.trunc,
 };
 
-// `np.*` shim: just the handful of helpers useful for scalar time-functions.
-// `np.where(cond, a, b)` is the common one (piecewise input currents).
+// `np.*` shim — scalar helpers useful for time-functions.
 const NP = {
-  pi: Math.PI,
-  e: Math.E,
+  pi: Math.PI, e: Math.E,
   where: (cond, a, b) => (cond ? a : b),
-  maximum: Math.max, minimum: Math.min, clip: (x, lo, hi) => Math.min(Math.max(x, lo), hi),
+  maximum: Math.max, minimum: Math.min,
+  clip: (x, lo, hi) => Math.min(Math.max(x, lo), hi),
   sin: Math.sin, cos: Math.cos, tan: Math.tan,
   exp: Math.exp, log: Math.log, sqrt: Math.sqrt, abs: Math.abs,
   floor: Math.floor, ceil: Math.ceil,
 };
 
-// Compile a user expression string (in terms of `t`) into a function f(t).
-// Note: this runs in the visitor's own browser sandbox — there is no server or
-// other user to affect — so a plain `Function` constructor is acceptable here.
+// Compile a user expression string into f(t). Runs in the visitor's own
+// browser sandbox, so a plain Function constructor is acceptable here.
 function compileExpression(expr) {
   if (expr === null || expr === undefined || !String(expr).trim()) {
     throw new Error("Expression is empty.");
@@ -67,7 +64,6 @@ function compileExpression(expr) {
 
   const wrapped = (t) => fn(t, MATH, NP, Math.PI, Math.E);
 
-  // Smoke-evaluate once so obvious mistakes surface immediately, not mid-run.
   let probe;
   try {
     probe = wrapped(0);
@@ -80,46 +76,73 @@ function compileExpression(expr) {
   return wrapped;
 }
 
-// Run the LIF simulation. `params` may override any of DEFAULTS.
+// Alpha-function synaptic current from a list of presynaptic spike times.
+function _synCurrent(t, synSpikes, synWeight, synTau) {
+  let total = 0.0;
+  for (const t_s of synSpikes) {
+    const dt_s = t - t_s;
+    if (dt_s > 0) {
+      total += synWeight * (dt_s / synTau) * Math.exp(1.0 - dt_s / synTau);
+    }
+  }
+  return total;
+}
+
+// Run the LIF simulation. `params` may override any key from DEFAULTS.
 // Returns the same shape as the backend's /api/run_simulation response.
 function simulate(params) {
   const p = { ...DEFAULTS, ...params };
 
-  const I_func = compileExpression(p.I);
+  const I_func     = compileExpression(p.I);
   const V_thr_func = compileExpression(p.V_thr);
-  const R_func = compileExpression(p.R);
+  const R_func     = compileExpression(p.R);
 
-  const V_rest = Number(p.V_rest);
-  const V_reset = Number(p.V_reset);
-  const tau_m = Number(p.tau_m);
-  const dt = Number(p.dt);
-  const simulation_time = Number(p.simulation_time);
+  const V_rest   = Number(p.V_rest);
+  const V_reset  = Number(p.V_reset);
+  const tau_m    = Number(p.tau_m);
+  const dt       = Number(p.dt);
+  const sim_time = Number(p.simulation_time);
+  const t_ref    = Number(p.t_ref);
+  const synSpikes  = Array.isArray(p.syn_spikes) ? p.syn_spikes.map(Number) : [];
+  const synWeight  = Number(p.syn_weight);
+  const synTau     = Number(p.syn_tau);
+  const adaptEnabled = Boolean(p.adapt_enabled);
+  const deltaThr   = Number(p.delta_thr);
+  const tauAdapt   = Number(p.tau_adapt);
 
-  const time = [];
-  const voltage = [];
-  const current = [];
-  const threshold = [];
-  const spike_times = [];
+  const time = [], voltage = [], current = [], threshold = [], resistance = [], spike_times = [];
 
   let V = V_rest;
+  let vThrAdapt = 0.0;
+  let tSinceSpike = t_ref;  // start ready to fire
   let t = 0.0;
 
-  while (t < simulation_time) {
-    const I = I_func(t);
-    const V_thr = V_thr_func(t);
-    const R = R_func(t);
+  while (t < sim_time) {
+    const I       = I_func(t) + _synCurrent(t, synSpikes, synWeight, synTau);
+    const V_thr_base = V_thr_func(t);
+    const V_thr_eff  = V_thr_base + (adaptEnabled ? vThrAdapt : 0.0);
+    const R       = R_func(t);
 
     current.push(I);
-    threshold.push(V_thr);
+    threshold.push(V_thr_eff);
+    resistance.push(R);
 
-    // Spike check before integration (matches lif_core).
-    if (V >= V_thr) {
+    // Spike check before integration (matches lif_core); blocked during refractory.
+    if (tSinceSpike >= t_ref && V >= V_thr_eff) {
       spike_times.push(t);
       V = V_reset;
+      tSinceSpike = 0.0;
+      if (adaptEnabled) vThrAdapt += deltaThr;
+    } else {
+      tSinceSpike += dt;
     }
 
     const dV_dt = (-(V - V_rest) + I * R) / tau_m;
     V += dV_dt * dt;
+
+    if (adaptEnabled) {
+      vThrAdapt -= vThrAdapt * (dt / tauAdapt);
+    }
 
     time.push(t);
     voltage.push(V);
@@ -127,16 +150,35 @@ function simulate(params) {
   }
 
   return {
-    time,
-    voltage,
-    current,
-    threshold,
-    spike_times,
+    time, voltage, current, threshold, resistance, spike_times,
     meta: { n_spikes: spike_times.length, n_steps: time.length, params: p },
   };
 }
 
-// --- Backend-client-compatible API (so app.js stays engine-agnostic) -------- //
+// Sweep constant I and return { currents, rates } — mirrors run_fi_curve() in lif_core.
+function fICurve(params) {
+  const p = { ...DEFAULTS, ...params };
+  const I_min  = Number(p.fi_I_min  ?? 0.0);
+  const I_max  = Number(p.fi_I_max  ?? 5.0);
+  const steps  = Number(p.fi_steps  ?? 50);
+  const sim_time = Number(p.fi_sim_time ?? 500);
+
+  const currents = [];
+  const rates    = [];
+
+  for (let i = 0; i < steps; i++) {
+    const i_val = I_min + (I_max - I_min) * (i / (steps - 1));
+    currents.push(i_val);
+    const result = simulate({ ...p, I: String(i_val), simulation_time: sim_time });
+    rates.push(result.spike_times.length / (sim_time / 1000.0));
+  }
+
+  return { currents, rates };
+}
+
+// --------------------------------------------------------------------------- //
+// Backend-client-compatible API (so app.js stays engine-agnostic)             //
+// --------------------------------------------------------------------------- //
 
 // eslint-disable-next-line no-unused-vars
 async function getDefaults() {
@@ -145,12 +187,15 @@ async function getDefaults() {
 
 // eslint-disable-next-line no-unused-vars
 async function runSimulation(payload) {
-  // Errors thrown here (invalid expressions) propagate to app.js's catch, which
-  // shows them in the error banner — same contract as the remote client.
   return simulate(payload);
 }
 
-// Allow Node to import this module for parity tests; harmless in the browser.
+// eslint-disable-next-line no-unused-vars
+async function runFICurve(payload) {
+  return fICurve(payload);
+}
+
+// Allow Node to import for parity tests.
 if (typeof module !== "undefined" && module.exports) {
-  module.exports = { DEFAULTS, compileExpression, simulate, getDefaults, runSimulation };
+  module.exports = { DEFAULTS, compileExpression, simulate, fICurve, getDefaults, runSimulation, runFICurve };
 }
