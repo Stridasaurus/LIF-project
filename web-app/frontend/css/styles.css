@@ -387,10 +387,122 @@ button.secondary:hover { background: var(--border); }
   background: var(--panel);
 }
 
-#plot, #fi-plot {
+#plot, #fi-plot, #isi-plot, #phase-plot {
   width: 100%;
   height: 580px;
 }
+
+/* ── Preset selector ─────────────────────────────────────────────────────── */
+
+.preset-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.6rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.preset-row label {
+  font-size: 0.82rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.preset-row select {
+  flex: 1;
+  padding: 0.45rem 0.6rem;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  appearance: auto;
+}
+
+.preset-row select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+#preset-desc {
+  margin: -0.4rem 0 0.9rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.45;
+  min-height: 1em;
+}
+
+/* ── About section ───────────────────────────────────────────────────────── */
+
+.about {
+  max-width: 860px;
+  margin: 2.5rem auto 3rem;
+  padding: 0 2rem;
+}
+
+.about h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.8rem;
+  color: var(--accent);
+}
+
+.about p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0 0 0.85rem;
+  line-height: 1.7;
+  max-width: 74ch;
+}
+
+.about .equation {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  padding: 0.75rem 1.1rem;
+  margin: 1rem 0;
+  font-size: 1rem;
+  color: var(--text);
+  border-radius: 0 6px 6px 0;
+}
+
+.about .param-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+  margin: 0.5rem 0 1rem;
+}
+
+.about .param-table th {
+  text-align: left;
+  color: var(--muted);
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.about .param-table td {
+  padding: 0.45rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  vertical-align: top;
+}
+
+.about .param-table td:first-child {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.about .param-table td:nth-child(2) {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.about .param-table tr:last-child td { border-bottom: none; }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */
 

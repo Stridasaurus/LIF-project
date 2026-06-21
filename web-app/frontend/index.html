@@ -50,6 +50,21 @@
       <section class="controls" aria-label="Simulation controls">
         <form id="sim-form" novalidate>
 
+          <!-- Presets -->
+          <div class="preset-row">
+            <label for="preset">Preset</label>
+            <select id="preset">
+              <option value="custom">— Custom —</option>
+              <option value="tonic">Tonic firing</option>
+              <option value="onset">Sensory stimulus onset</option>
+              <option value="theta">Theta-modulated (~8 Hz)</option>
+              <option value="gamma">Gamma-modulated (~40 Hz)</option>
+              <option value="ramp">Ramp (rheobase sweep)</option>
+              <option value="conductance">High-conductance state</option>
+            </select>
+          </div>
+          <p id="preset-desc"></p>
+
           <!-- Core parameter functions -->
           <div class="field">
             <label for="I">Input current <em>I(t)</em> <span class="unit">nA</span></label>
@@ -134,11 +149,52 @@
         <div class="plot-tabs">
           <button class="tab active" id="tab-sim">Simulation</button>
           <button class="tab" id="tab-fi">F–I Curve</button>
+          <button class="tab" id="tab-isi">ISI Distribution</button>
+          <button class="tab" id="tab-phase">Phase Portrait</button>
         </div>
         <div id="plot"></div>
         <div id="fi-plot" hidden></div>
+        <div id="isi-plot" hidden></div>
+        <div id="phase-plot" hidden></div>
       </section>
     </main>
+
+    <section class="about" aria-label="About the LIF model">
+      <h2>About the Leaky Integrate-and-Fire Model</h2>
+      <p>
+        The <strong>Leaky Integrate-and-Fire (LIF)</strong> neuron, first described by Louis
+        Lapicque in 1907, is the foundational model of computational neuroscience. It reduces
+        the complex electrochemistry of a biological neuron to two ideas: passive membrane
+        decay (the "leaky" part) and threshold-triggered spike emission (the "fire" part).
+      </p>
+      <div class="equation">
+        τ<sub>m</sub> · dV/dt &nbsp;=&nbsp; −(V − V<sub>rest</sub>) + R(t) · I(t)
+      </div>
+      <p>
+        When <em>V(t)</em> reaches the threshold <em>V<sub>thr</sub>(t)</em>, a spike is
+        recorded and the membrane potential is reset to <em>V<sub>reset</sub></em>. The decay
+        term −(V − V<sub>rest</sub>) pulls the voltage back toward rest in the absence of
+        input, just as real ion channel conductances do.
+      </p>
+      <table class="param-table">
+        <thead><tr><th>Symbol</th><th>Default</th><th>Meaning</th></tr></thead>
+        <tbody>
+          <tr><td>τ<sub>m</sub></td><td>10 ms</td><td>Membrane time constant — how fast V decays toward V<sub>rest</sub> without input</td></tr>
+          <tr><td>V<sub>rest</sub></td><td>−70 mV</td><td>Resting (equilibrium) potential</td></tr>
+          <tr><td>V<sub>reset</sub></td><td>−75 mV</td><td>Post-spike reset potential (brief hyperpolarisation)</td></tr>
+          <tr><td>V<sub>thr</sub>(t)</td><td>−55 mV</td><td>Spike threshold — enter a function of <em>t</em> to model dynamic thresholds</td></tr>
+          <tr><td>I(t)</td><td>1.5 nA</td><td>Input current — injected current or net synaptic drive</td></tr>
+          <tr><td>R(t)</td><td>10 MΩ</td><td>Membrane resistance — higher R means more voltage change per unit of current</td></tr>
+        </tbody>
+      </table>
+      <p>
+        Despite its simplicity, the LIF model reproduces firing-rate statistics of real neurons
+        with surprising accuracy and remains the standard building block for large-scale network
+        simulations. The parameter functions <em>I(t)</em>, <em>V<sub>thr</sub>(t)</em>, and
+        <em>R(t)</em> let you explore how time-varying inputs and biological modulation shape
+        neural activity — use the presets above as starting points.
+      </p>
+    </section>
 
     <footer>
       <small>
