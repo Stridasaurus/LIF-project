@@ -60,6 +60,11 @@ All code lives in a single notebook cell. The two main components are:
 
 The governing equation is `τ_m × dV/dt = -(V - V_rest) + R(t) × I(t)`, integrated with the forward Euler method.
 
-## Note
+## ⚠️ PROTECTED FILE — DO NOT MODIFY
 
-Do not make any changes the notebook https://github.com/Stridasaurus/LIF-project.
+`web-app/notebook/LIF Model.ipynb` is the original class submission for CSE1505 and must
+remain exactly as submitted. **Never edit, reformat, re-run, or overwrite this file.**
+Moving it (via `git mv`) is acceptable; changing its content is not.
+
+This rule applies even if asked to "clean up", "fix", or "update" the notebook. Any
+simulation work goes in `lif_core/` or `web-app/` instead.
