@@ -42,6 +42,9 @@
           Enter time functions for I(t), V<sub>thr</sub>(t), and R(t), then run the
           simulation. Use <code>t</code> (ms), <code>math.*</code>, and <code>np.*</code>
           — e.g. <code>1.5 + math.sin(t / 10)</code>. Runs entirely in your browser.
+          <span class="note">For conditions, use
+          <code>np.where(t &gt; 50, 2.5, 0)</code> rather than a Python
+          <code>if/else</code> expression.</span>
         </p>
       </div>
     </header>
@@ -160,40 +163,104 @@
     </main>
 
     <section class="about" aria-label="About the LIF model">
-      <h2>About the Leaky Integrate-and-Fire Model</h2>
-      <p>
-        The <strong>Leaky Integrate-and-Fire (LIF)</strong> neuron, first described by Louis
-        Lapicque in 1907, is the foundational model of computational neuroscience. It reduces
-        the complex electrochemistry of a biological neuron to two ideas: passive membrane
-        decay (the "leaky" part) and threshold-triggered spike emission (the "fire" part).
-      </p>
-      <div class="equation">
-        τ<sub>m</sub> · dV/dt &nbsp;=&nbsp; −(V − V<sub>rest</sub>) + R(t) · I(t)
+
+      <!-- Simulation tab: the full primer on the LIF model. -->
+      <div class="about-panel" id="about-sim">
+        <h2>About the Leaky Integrate-and-Fire Model</h2>
+        <p>
+          The <strong>Leaky Integrate-and-Fire (LIF)</strong> neuron, first described by Louis
+          Lapicque in 1907, is the foundational model of computational neuroscience. It reduces
+          the complex electrochemistry of a biological neuron to two ideas: passive membrane
+          decay (the "leaky" part) and threshold-triggered spike emission (the "fire" part).
+        </p>
+        <div class="equation">
+          τ<sub>m</sub> · dV/dt &nbsp;=&nbsp; −(V − V<sub>rest</sub>) + R(t) · I(t)
+        </div>
+        <p>
+          When <em>V(t)</em> reaches the threshold <em>V<sub>thr</sub>(t)</em>, a spike is
+          recorded and the membrane potential is reset to <em>V<sub>reset</sub></em>. The decay
+          term −(V − V<sub>rest</sub>) pulls the voltage back toward rest in the absence of
+          input, just as real ion channel conductances do.
+        </p>
+        <table class="param-table">
+          <thead><tr><th>Symbol</th><th>Default</th><th>Meaning</th></tr></thead>
+          <tbody>
+            <tr><td>τ<sub>m</sub></td><td>10 ms</td><td>Membrane time constant — how fast V decays toward V<sub>rest</sub> without input</td></tr>
+            <tr><td>V<sub>rest</sub></td><td>−70 mV</td><td>Resting (equilibrium) potential</td></tr>
+            <tr><td>V<sub>reset</sub></td><td>−75 mV</td><td>Post-spike reset potential (brief hyperpolarisation)</td></tr>
+            <tr><td>V<sub>thr</sub>(t)</td><td>−55 mV</td><td>Spike threshold — enter a function of <em>t</em> to model dynamic thresholds</td></tr>
+            <tr><td>I(t)</td><td>1.5 nA</td><td>Input current — injected current or net synaptic drive</td></tr>
+            <tr><td>R(t)</td><td>10 MΩ</td><td>Membrane resistance — higher R means more voltage change per unit of current</td></tr>
+          </tbody>
+        </table>
+        <p>
+          Despite its simplicity, the LIF model reproduces firing-rate statistics of real neurons
+          with surprising accuracy and remains the standard building block for large-scale network
+          simulations. The parameter functions <em>I(t)</em>, <em>V<sub>thr</sub>(t)</em>, and
+          <em>R(t)</em> let you explore how time-varying inputs and biological modulation shape
+          neural activity — use the presets above as starting points.
+        </p>
       </div>
-      <p>
-        When <em>V(t)</em> reaches the threshold <em>V<sub>thr</sub>(t)</em>, a spike is
-        recorded and the membrane potential is reset to <em>V<sub>reset</sub></em>. The decay
-        term −(V − V<sub>rest</sub>) pulls the voltage back toward rest in the absence of
-        input, just as real ion channel conductances do.
-      </p>
-      <table class="param-table">
-        <thead><tr><th>Symbol</th><th>Default</th><th>Meaning</th></tr></thead>
-        <tbody>
-          <tr><td>τ<sub>m</sub></td><td>10 ms</td><td>Membrane time constant — how fast V decays toward V<sub>rest</sub> without input</td></tr>
-          <tr><td>V<sub>rest</sub></td><td>−70 mV</td><td>Resting (equilibrium) potential</td></tr>
-          <tr><td>V<sub>reset</sub></td><td>−75 mV</td><td>Post-spike reset potential (brief hyperpolarisation)</td></tr>
-          <tr><td>V<sub>thr</sub>(t)</td><td>−55 mV</td><td>Spike threshold — enter a function of <em>t</em> to model dynamic thresholds</td></tr>
-          <tr><td>I(t)</td><td>1.5 nA</td><td>Input current — injected current or net synaptic drive</td></tr>
-          <tr><td>R(t)</td><td>10 MΩ</td><td>Membrane resistance — higher R means more voltage change per unit of current</td></tr>
-        </tbody>
-      </table>
-      <p>
-        Despite its simplicity, the LIF model reproduces firing-rate statistics of real neurons
-        with surprising accuracy and remains the standard building block for large-scale network
-        simulations. The parameter functions <em>I(t)</em>, <em>V<sub>thr</sub>(t)</em>, and
-        <em>R(t)</em> let you explore how time-varying inputs and biological modulation shape
-        neural activity — use the presets above as starting points.
-      </p>
+
+      <!-- F–I Curve tab. -->
+      <div class="about-panel" id="about-fi" hidden>
+        <h2>F–I Curve (Frequency–Current)</h2>
+        <p>
+          The <strong>F–I curve</strong> plots the neuron's steady-state firing rate against a
+          constant input current. It is built by holding <em>I</em> fixed at each level along the
+          x-axis, running a simulation, and measuring how many spikes result — repeated across a
+          sweep of currents.
+        </p>
+        <div class="equation">
+          τ<sub>m</sub> · dV/dt &nbsp;=&nbsp; −(V − V<sub>rest</sub>) + R(t) · I(t)
+        </div>
+        <p>
+          Below a critical current the neuron never reaches threshold and stays silent. That
+          turning point is the <strong>rheobase</strong> (marked on the plot) — the minimum
+          sustained drive needed to fire. Above it, the firing rate climbs with current; the
+          slope is the neuron's <em>gain</em>. This curve is the classic way to summarise how a
+          cell converts input strength into output rate.
+        </p>
+      </div>
+
+      <!-- ISI Distribution tab. -->
+      <div class="about-panel" id="about-isi" hidden>
+        <h2>ISI Distribution (Inter-Spike Intervals)</h2>
+        <p>
+          The <strong>inter-spike interval (ISI)</strong> is the time gap between two consecutive
+          spikes. This histogram shows how those intervals are distributed across the run — a
+          fingerprint of the neuron's firing pattern.
+        </p>
+        <div class="equation">
+          τ<sub>m</sub> · dV/dt &nbsp;=&nbsp; −(V − V<sub>rest</sub>) + R(t) · I(t)
+        </div>
+        <p>
+          A single narrow peak means <em>regular</em>, clock-like firing; a broad or multi-peaked
+          spread means <em>irregular</em> firing. The <strong>coefficient of variation</strong>
+          (CV = standard deviation ÷ mean), shown in the title, captures this in one number:
+          CV ≈ 0 is perfectly periodic, while CV ≈ 1 resembles a random (Poisson) spike train.
+        </p>
+      </div>
+
+      <!-- Phase Portrait tab. -->
+      <div class="about-panel" id="about-phase" hidden>
+        <h2>Phase Portrait (V vs. dV/dt)</h2>
+        <p>
+          The <strong>phase portrait</strong> plots the membrane's rate of change <em>dV/dt</em>
+          against its voltage <em>V</em>, tracing the trajectory through state space instead of
+          against time. It shows the <em>shape</em> of the dynamics rather than their timing.
+        </p>
+        <div class="equation">
+          τ<sub>m</sub> · dV/dt &nbsp;=&nbsp; −(V − V<sub>rest</sub>) + R(t) · I(t)
+        </div>
+        <p>
+          For the LIF neuron the leak term drives trajectories back toward <em>V<sub>rest</sub></em>,
+          while input current pushes <em>dV/dt</em> upward. Each spike appears as a sharp horizontal
+          jump — the reset from threshold back down to <em>V<sub>reset</sub></em>. Repetitive firing
+          traces a closed loop; a decay to a single point means the cell settled without spiking.
+        </p>
+      </div>
+
     </section>
 
     <footer>
