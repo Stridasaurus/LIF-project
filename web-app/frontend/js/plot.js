@@ -150,9 +150,15 @@ function renderPhasePortrait(voltage, dt) {
 function renderFICurve(data) {
   const { currents, rates } = data;
 
+  // Rheobase: the true firing onset lies between the last silent sample and the
+  // first firing one, so report the midpoint of that bracket rather than the
+  // first firing current (which over-reads by up to one sweep step).
   let rheobase = null;
   for (let i = 0; i < rates.length; i++) {
-    if (rates[i] > 0) { rheobase = currents[i]; break; }
+    if (rates[i] > 0) {
+      rheobase = i > 0 ? (currents[i - 1] + currents[i]) / 2 : currents[i];
+      break;
+    }
   }
 
   const shapes = rheobase !== null ? [{
