@@ -42,6 +42,9 @@
           Enter time functions for I(t), V<sub>thr</sub>(t), and R(t), then run the
           simulation. Use <code>t</code> (ms), <code>math.*</code>, and <code>np.*</code>
           — e.g. <code>1.5 + math.sin(t / 10)</code>. Runs entirely in your browser.
+          <span class="note">For conditions, use
+          <code>np.where(t &gt; 50, 2.5, 0)</code> rather than a Python
+          <code>if/else</code> expression.</span>
         </p>
       </div>
     </header>

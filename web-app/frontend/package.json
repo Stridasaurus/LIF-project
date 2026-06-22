@@ -1,0 +1,12 @@
+{
+  "name": "lif-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "LIF Neuron Simulator frontend (static, client-side engine).",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.0"
+  }
+}
