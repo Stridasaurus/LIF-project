@@ -443,6 +443,8 @@ button.secondary:hover { background: var(--border); }
   padding: 0 2rem;
 }
 
+.about-panel[hidden] { display: none; }
+
 .about h2 {
   font-size: 1.1rem;
   margin: 0 0 0.8rem;

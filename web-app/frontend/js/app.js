@@ -11,7 +11,7 @@ const PRESETS = [
   { id: "onset",
     label: "Sensory stimulus onset",
     desc: "Silent until t = 50 ms, then a step current mimics an abrupt stimulus. Observe onset latency and the initial burst.",
-    I: "2.5 if t > 50 else 0.0", V_thr: "-55", R: "10" },
+    I: "np.where(t > 50, 2.5, 0.0)", V_thr: "-55", R: "10" },
   { id: "theta",
     label: "Theta-modulated input (~8 Hz)",
     desc: "Hippocampal theta rhythm (125 ms period). The neuron fires preferentially near the peak phase of the oscillation.",
@@ -43,10 +43,10 @@ const spikeStatsEl = document.getElementById("spike-stats");
 const neuronSvg    = document.getElementById("neuron-svg");
 
 const TABS = {
-  sim:   { btn: document.getElementById("tab-sim"),   div: document.getElementById("plot") },
-  fi:    { btn: document.getElementById("tab-fi"),    div: document.getElementById("fi-plot") },
-  isi:   { btn: document.getElementById("tab-isi"),   div: document.getElementById("isi-plot") },
-  phase: { btn: document.getElementById("tab-phase"), div: document.getElementById("phase-plot") },
+  sim:   { btn: document.getElementById("tab-sim"),   div: document.getElementById("plot"),       about: document.getElementById("about-sim") },
+  fi:    { btn: document.getElementById("tab-fi"),    div: document.getElementById("fi-plot"),    about: document.getElementById("about-fi") },
+  isi:   { btn: document.getElementById("tab-isi"),   div: document.getElementById("isi-plot"),   about: document.getElementById("about-isi") },
+  phase: { btn: document.getElementById("tab-phase"), div: document.getElementById("phase-plot"), about: document.getElementById("about-phase") },
 };
 
 let defaults = null;
@@ -151,10 +151,12 @@ function renderSpikes(result) {
 }
 
 function showTab(name) {
-  Object.entries(TABS).forEach(([key, { btn, div }]) => {
+  Object.entries(TABS).forEach(([key, { btn, div, about }]) => {
     const active = key === name;
     if (btn) btn.classList.toggle("active", active);
     if (div) div.hidden = !active;
+    // Swap the About section to match the visualisation on screen.
+    if (about) about.hidden = !active;
   });
 }
 
